@@ -1177,7 +1177,10 @@ function renderGrille(prods) {
     const bientot = !actif && g.dispoPour;
     const indispo = !actif && !bientot;
     const nVariantes = g.variantes.length;
-    const prixAff = (g.prixBoutique * prixMulti).toFixed(2).replace('.', ',');
+    const prix = g.variantes.map(function(v) { return v.prixBoutique * prixMulti; }).filter(function(p) { return p > 0; });
+    const prixMin = Math.min.apply(null, prix).toFixed(2).replace('.', ',');
+    const prixMax = Math.max.apply(null, prix).toFixed(2).replace('.', ',');
+    const prixAff = prixMin === prixMax ? prixMin : prixMin + ' — ' + prixMax;
     const prixPub = g.prixPublic ? g.prixPublic.toFixed(2).replace('.', ',') : '';
     const imgHtml = g.photo
       ? `<img class="product-img" src="${g.photo}" alt="" onerror="this.parentNode.innerHTML='<div class=&quot;product-img-placeholder&quot;>🐕</div>'">`
