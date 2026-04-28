@@ -1248,20 +1248,20 @@ function ouvrirModal(groupe) {
     const groupesCatalogue = grouperProduits(catalogue);
     let complItems = '';
     compl.forEach(function(handle) {
-      const nom = handle.replace(/-/g,' ').replace(/\w/g, function(l){ return l.toUpperCase(); });
       const groupeComp = groupesCatalogue.find(function(g) {
         return g.variantes.some(function(v) {
-          return v.sku && handle && v.sku.toLowerCase().replace(/-/g,'').includes(handle.replace(/-/g,'').substring(0,8).toLowerCase());
+          return v.handle && v.handle.trim() === handle.trim();
         });
       });
-      const photo = groupeComp ? (groupeComp.photo || '') : '';
+      const photo = groupeComp ? (groupeComp.variantes[0].photo || groupeComp.photo || '') : '';
+      const nomAffiche = groupeComp ? groupeComp.nom : handle.replace(/-/g,' ');
       const idx = groupeComp ? _groupesRendus.findIndex(function(x){ return x.nom === groupeComp.nom; }) : -1;
       const onclick = idx >= 0 ? 'fermerModalBtn(); setTimeout(function(){ ouvrirModal(_groupesRendus[' + idx + ']); }, 100);' : '';
       complItems += '<div onclick="' + onclick + '" style="cursor:pointer; text-align:center; width:72px;">';
       complItems += '<div style="width:72px; height:72px; background:var(--beige); overflow:hidden; margin-bottom:4px;">';
-      if (photo) complItems += '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=&quot;none&quot;">';
+      if (photo) complItems += '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;">';
       complItems += '</div>';
-      complItems += '<div style="font-size:9px; color:var(--mastic2); line-height:1.2;">' + nom + '</div>';
+      complItems += '<div style="font-size:9px; color:var(--mastic2); line-height:1.2;">' + nomAffiche + '</div>';
       complItems += '</div>';
     });
     complHtml = '<div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--gris2);">';
@@ -1346,19 +1346,40 @@ function selOpt2(el, val) {
 
 function majImageModal() {
   if (!modalProduit) return;
-  const variante = modalProduit.variantes.find(v =>
-    (!modalOpt1Sel || v.option1 === modalOpt1Sel) &&
-    (!modalOpt2Sel || v.option2 === modalOpt2Sel)
-  );
+  const variante = modalProduit.variantes.find(function(v) {
+    return (!modalOpt1Sel || v.option1 === modalOpt1Sel) &&
+           (!modalOpt2Sel || v.option2 === modalOpt2Sel);
+  });
   if (!variante) return;
+
+  // Mettre a jour l image
   const photo = variante.photo || modalProduit.photo;
-  if (!photo) return;
-  const img = document.querySelector('.modal-img');
-  if (img) {
-    img.src = photo;
-    img.onerror = function() {
-      this.outerHTML = '<div class="modal-img-placeholder">🐕</div>';
-    };
+  if (photo) {
+    const img = document.querySelector('.modal-img');
+    if (img) {
+      img.src = photo;
+      img.onerror = function() {
+        this.outerHTML = '<div class="modal-img-placeholder">🐕</div>';
+      };
+    }
+  }
+
+  // Mettre a jour le prix
+  const prixMulti = boutique.remise > 0 ? (1 - boutique.remise / 100) : 1;
+  const prixBoutique = (variante.prixBoutique * prixMulti).toFixed(2).replace('.', ',');
+  const prixPublic = variante.prixPublic ? variante.prixPublic.toFixed(2).replace('.', ',') : null;
+
+  const elPrix = document.querySelector('.modal-prix-btob');
+  if (elPrix) elPrix.innerHTML = prixBoutique + ' <small style="font-size:14px;color:#888">€ HT</small>';
+
+  const elPvc = document.querySelector('.modal-prix-public');
+  if (elPvc) {
+    if (prixPublic) {
+      elPvc.textContent = 'PVC ' + prixPublic + ' €';
+      elPvc.style.display = '';
+    } else {
+      elPvc.style.display = 'none';
+    }
   }
 }
 
