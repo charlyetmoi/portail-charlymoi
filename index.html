@@ -1225,11 +1225,11 @@ function renderGrille(prods) {
     const bientot = !actif && g.dispoPour;
     const indispo = !actif && !bientot;
     const nVariantes = g.variantes.length;
-    const prix = g.variantes.map(function(v) { return v.prixBoutique * prixMulti; }).filter(function(p) { return p > 0; });
+    const prix = g.variantes.map(function(v) { return Number(v.prixBoutique) * prixMulti; }).filter(function(p) { return p > 0; });
     const prixMin = Math.min.apply(null, prix).toFixed(2).replace('.', ',');
     const prixMax = Math.max.apply(null, prix).toFixed(2).replace('.', ',');
     const prixAff = prixMin === prixMax ? prixMin : prixMin + ' — ' + prixMax;
-    const prixPub = g.prixPublic ? g.prixPublic.toFixed(2).replace('.', ',') : '';
+    const prixPub = g.prixPublic ? Number(g.prixPublic).toFixed(2).replace('.', ',') : '';
     const imgHtml = g.photo
       ? `<img class="product-img" src="${g.photo}" alt="" onerror="this.parentNode.innerHTML='<div class=&quot;product-img-placeholder&quot;>🐕</div>'">`
       : `<div class="product-img-placeholder">🐕</div>`;
@@ -1417,8 +1417,8 @@ function majImageModal() {
 
   // Mettre a jour le prix
   const prixMulti = boutique.remise > 0 ? (1 - boutique.remise / 100) : 1;
-  const prixBoutique = (variante.prixBoutique * prixMulti).toFixed(2).replace('.', ',');
-  const prixPublic = variante.prixPublic ? variante.prixPublic.toFixed(2).replace('.', ',') : null;
+  const prixBoutique = (Number(variante.prixBoutique) * prixMulti).toFixed(2).replace('.', ',');
+  const prixPublic = variante.prixPublic ? Number(variante.prixPublic).toFixed(2).replace('.', ',') : null;
 
   const elPrix = document.querySelector('.modal-prix-btob');
   if (elPrix) elPrix.innerHTML = prixBoutique + ' <small style="font-size:14px;color:#888">€ HT</small>';
