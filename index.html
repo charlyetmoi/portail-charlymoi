@@ -891,7 +891,7 @@ body {
   <div class="filtres-bar">
     <span class="filtres-label">Filtrer</span>
     <div class="filtre-chips" id="filtre-chips">
-      <button class="chip active" data-cat="all" onclick="filtrerCategorie(this)">Tout</button>
+      <button class="chip active" data-cat="Laisse" onclick="filtrerCategorie(this)">Laisses</button>
     </div>
     <input type="text" class="search-input" placeholder="Rechercher un produit…" oninput="filtrerRecherche(this.value)">
   </div>
@@ -1059,7 +1059,7 @@ function lancerPortail() {
   document.getElementById('screen-portail').style.display = 'block';
   document.getElementById('header-boutique-nom').textContent = boutique.nom;
   // Charger les laisses par défaut
-  chargerCatalogue('Laisse');
+  chargerCatalogue('laisses');
 }
 
 // Garder en mémoire les catégories déjà chargées
@@ -1154,12 +1154,12 @@ function afficherCatalogue() {
   // Construire les chips de catégories
   const cats = [...new Set(catalogue.map(p => p.categorie).filter(Boolean))];
   const chipsContainer = document.getElementById('filtre-chips');
-  chipsContainer.innerHTML = '<button class="chip active" data-cat="all" onclick="filtrerCategorie(this)">Tout</button>';
-  cats.forEach(cat => {
+  chipsContainer.innerHTML = '';
+  cats.forEach(function(cat, idx) {
     const btn = document.createElement('button');
-    btn.className = 'chip';
+    btn.className = idx === 0 ? 'chip active' : 'chip';
     btn.dataset.cat = cat;
-    btn.textContent = cat;
+    btn.textContent = cat + (cat.slice(-1) !== 's' ? 's' : '');
     btn.onclick = function() { filtrerCategorie(this); };
     chipsContainer.appendChild(btn);
   });
