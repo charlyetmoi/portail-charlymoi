@@ -1058,22 +1058,63 @@ function lancerPortail() {
   document.getElementById('screen-access').style.display = 'none';
   document.getElementById('screen-portail').style.display = 'block';
   document.getElementById('header-boutique-nom').textContent = boutique.nom;
-  chargerCatalogue();
+  // Charger les laisses par défaut
+  chargerCatalogue('laisses');
 }
 
-async function chargerCatalogue() {
+// Garder en mémoire les catégories déjà chargées
+const categoriesChargees = {};
+
+async function chargerCatalogue(categorie) {
+  categorie = categorie || 'laisses';
+  
+  // Si déjà chargée, juste afficher
+  if (categoriesChargees[categorie]) {
+    // Mettre à jour le catalogue avec les produits de cette catégorie
+    const anciens = catalogue.filter(function(p) {
+      return String(p.categorie || '').toLowerCase() !== categorie.toLowerCase();
+    });
+    catalogue = anciens.concat(categoriesChargees[categorie]);
+    appliqueFiltres();
+    return;
+  }
+
+  // Afficher loader
+  document.getElementById('catalogue-grid').innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
   try {
-    const resp = await fetch(`${APPS_SCRIPT_URL}?action=catalogue&code=${boutique.code || ''}`);
+    const catParam = encodeURIComponent(categorie);
+    const resp = await fetch(`${APPS_SCRIPT_URL}?action=catalogue&code=${boutique.code || ''}&categorie=${catParam}`);
     const data = await resp.json();
-    catalogue = data.catalogue || [];
-    if (catalogue.length === 0) {
-      catalogue = genererCatalogueDemo();
-    }
+    const nouveaux = data.catalogue || [];
+    
+    // Stocker en mémoire
+    categoriesChargees[categorie] = nouveaux;
+    
+    // Ajouter au catalogue global
+    const anciens = catalogue.filter(function(p) {
+      return String(p.categorie || '').toLowerCase() !== categorie.toLowerCase();
+    });
+    catalogue = anciens.concat(nouveaux);
+    
     afficherCatalogue();
   } catch(e) {
-    catalogue = genererCatalogueDemo();
-    afficherCatalogue();
+    if (catalogue.length === 0) {
+      catalogue = genererCatalogueDemo();
+      afficherCatalogue();
+    }
   }
+}
+
+async function chargerToutLesCatalogue() {
+  if (categoriesChargees['tous']) return;
+  try {
+    const resp = await fetch(`${APPS_SCRIPT_URL}?action=catalogue&code=${boutique.code || ''}&categorie=tous`);
+    const data = await resp.json();
+    catalogue = data.catalogue || [];
+    categoriesChargees['tous'] = catalogue;
+    afficherCatalogue();
+  } catch(e) {}
 }
 
 // ─── Catalogue de démo ────────────────────────────────────
@@ -1130,7 +1171,14 @@ function filtrerCategorie(el) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   categorieActive = el.dataset.cat;
-  appliqueFiltres();
+  
+  if (categorieActive === 'all') {
+    // Charger tout si pas encore fait
+    chargerToutLesCatalogue();
+  } else {
+    // Charger la catégorie si pas encore chargée
+    chargerCatalogue(categorieActive);
+  }
 }
 
 function filtrerRecherche(val) {
