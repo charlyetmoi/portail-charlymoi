@@ -892,6 +892,12 @@ body {
     <span class="filtres-label">Filtrer</span>
     <div class="filtre-chips" id="filtre-chips">
       <button class="chip active" data-cat="Laisse" onclick="filtrerCategorie(this)">Laisses</button>
+      <button class="chip" data-cat="Collier" onclick="filtrerCategorie(this)">Colliers</button>
+      <button class="chip" data-cat="Manteau" onclick="filtrerCategorie(this)">Manteaux</button>
+      <button class="chip" data-cat="Sac" onclick="filtrerCategorie(this)">Sacs</button>
+      <button class="chip" data-cat="Foulard" onclick="filtrerCategorie(this)">Foulards</button>
+      <button class="chip" data-cat="Peignoir" onclick="filtrerCategorie(this)">Peignoirs</button>
+      <button class="chip" data-cat="Porte sac à déjections" onclick="filtrerCategorie(this)">Porte sac</button>
     </div>
     <input type="text" class="search-input" placeholder="Rechercher un produit…" oninput="filtrerRecherche(this.value)">
   </div>
@@ -1153,16 +1159,11 @@ function grouperProduits(prods) {
 function afficherCatalogue() {
   // Construire les chips de catégories
   const cats = [...new Set(catalogue.map(p => p.categorie).filter(Boolean))];
+  // Les chips sont fixes dans le HTML, on ne les recrée pas
+  // On s'assure juste que le premier chip est actif
   const chipsContainer = document.getElementById('filtre-chips');
-  chipsContainer.innerHTML = '';
-  cats.forEach(function(cat, idx) {
-    const btn = document.createElement('button');
-    btn.className = idx === 0 ? 'chip active' : 'chip';
-    btn.dataset.cat = cat;
-    btn.textContent = cat + (cat.slice(-1) !== 's' ? 's' : '');
-    btn.onclick = function() { filtrerCategorie(this); };
-    chipsContainer.appendChild(btn);
-  });
+  const firstChip = chipsContainer.querySelector('.chip');
+  if (firstChip) firstChip.classList.add('active');
 
   appliqueFiltres();
 }
