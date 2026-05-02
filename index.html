@@ -891,6 +891,7 @@ body {
   <div class="filtres-bar">
     <span class="filtres-label">Filtrer</span>
     <div class="filtre-chips" id="filtre-chips">
+      <button class="chip" data-cat="all" onclick="filtrerCategorie(this)">Tout</button>
       <button class="chip active" data-cat="Laisse" onclick="filtrerCategorie(this)">Laisses</button>
       <button class="chip" data-cat="Collier" onclick="filtrerCategorie(this)">Colliers</button>
       <button class="chip" data-cat="Manteau" onclick="filtrerCategorie(this)">Manteaux</button>
@@ -1113,14 +1114,34 @@ async function chargerCatalogue(categorie) {
 }
 
 async function chargerToutLesCatalogue() {
-  if (categoriesChargees['tous']) return;
-  try {
-    const resp = await fetch(`${APPS_SCRIPT_URL}?action=catalogue&code=${boutique.code || ''}&categorie=tous`);
-    const data = await resp.json();
-    catalogue = data.catalogue || [];
-    categoriesChargees['tous'] = catalogue;
-    afficherCatalogue();
-  } catch(e) {}
+  if (categoriesChargees['tous']) {
+    catalogue = categoriesChargees['tous'];
+    appliqueFiltres();
+    return;
+  }
+  document.getElementById('catalogue-grid').innerHTML = '<div class="loading"><div class="spinner"></div>Chargement de tout le catalogue...</div>';
+  
+  const categories = ['Laisse', 'Collier', 'Manteau', 'Sac', 'Foulard', 'Peignoir', 'Porte sac à déjections'];
+  let tous = [];
+  
+  for (let i = 0; i < categories.length; i++) {
+    const cat = categories[i];
+    if (categoriesChargees[cat]) {
+      tous = tous.concat(categoriesChargees[cat]);
+    } else {
+      try {
+        const resp = await fetch(APPS_SCRIPT_URL + '?action=catalogue&code=' + (boutique.code || '') + '&categorie=' + encodeURIComponent(cat));
+        const data = await resp.json();
+        const prods = data.catalogue || [];
+        categoriesChargees[cat] = prods;
+        tous = tous.concat(prods);
+      } catch(e) {}
+    }
+  }
+  
+  catalogue = tous;
+  categoriesChargees['tous'] = tous;
+  afficherCatalogue();
 }
 
 // ─── Catalogue de démo ────────────────────────────────────
@@ -1281,8 +1302,8 @@ function ouvrirModal(groupe) {
   modalQte = 1;
 
   const prixMulti = boutique.remise > 0 ? (1 - boutique.remise / 100) : 1;
-  const prixBoutique = (groupe.prixBoutique * prixMulti).toFixed(2).replace('.', ',');
-  const prixPublic = groupe.prixPublic ? groupe.prixPublic.toFixed(2).replace('.', ',') : null;
+  const prixBoutique = (Number(groupe.prixBoutique) * prixMulti).toFixed(2).replace('.', ',');
+  const prixPublic = groupe.prixPublic ? Number(groupe.prixPublic).toFixed(2).replace('.', ',') : null;
   const remiseLabel = boutique.remise > 0 ? `Remise ${boutique.remise}% appliquée` : '';
 
   // Extraire options uniques
