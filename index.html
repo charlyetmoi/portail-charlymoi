@@ -992,6 +992,7 @@ body {
 // CONFIGURATION — À modifier avec votre URL Apps Script
 // ═══════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvLP6dLkvCuKS7r0Jrjr5QiYd1zr61Vg54r6qGAxEYjgx1BKavKD_mtR3ND4MLcFpE/exec";
+const CATALOGUE_JSON_URL = "https://drive.google.com/uc?export=download&id=1Z4Qtq5mONV_2_Ljpu5ztLFprofCxpSX8";
 const MINIMUM_COMMANDE = 200;
 const FRANCO_PORT = 1000;
 
@@ -1072,76 +1073,52 @@ function lancerPortail() {
 // Garder en mémoire les catégories déjà chargées
 const categoriesChargees = {};
 
-async function chargerCatalogue(categorie) {
-  categorie = categorie || 'laisses';
-  
-  // Si déjà chargée, juste afficher
-  if (categoriesChargees[categorie]) {
-    // Mettre à jour le catalogue avec les produits de cette catégorie
-    const anciens = catalogue.filter(function(p) {
-      return String(p.categorie || '').toLowerCase() !== categorie.toLowerCase();
-    });
-    catalogue = anciens.concat(categoriesChargees[categorie]);
-    appliqueFiltres();
-    return;
-  }
+// Catalogue complet chargé une seule fois depuis Google Drive
+let catalogueCompletCharge = false;
+let catalogueComplet = [];
 
-  // Afficher loader
-  document.getElementById('catalogue-grid').innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
-
+async function chargerCatalogueComplet() {
+  if (catalogueCompletCharge) return;
+  document.getElementById('catalogue-grid').innerHTML = '<div class="loading"><div class="spinner"></div>Chargement du catalogue...</div>';
   try {
-    const catParam = encodeURIComponent(categorie);
-    const resp = await fetch(`${APPS_SCRIPT_URL}?action=catalogue&code=${boutique.code || ''}&categorie=${catParam}`);
-    const data = await resp.json();
-    const nouveaux = data.catalogue || [];
-    
-    // Stocker en mémoire
-    categoriesChargees[categorie] = nouveaux;
-    
-    // Ajouter au catalogue global
-    const anciens = catalogue.filter(function(p) {
-      return String(p.categorie || '').toLowerCase() !== categorie.toLowerCase();
-    });
-    catalogue = anciens.concat(nouveaux);
-    
+    const resp = await fetch(CATALOGUE_JSON_URL);
+    catalogueComplet = await resp.json();
+    catalogueCompletCharge = true;
+    catalogue = catalogueComplet;
     afficherCatalogue();
   } catch(e) {
-    if (catalogue.length === 0) {
-      catalogue = genererCatalogueDemo();
-      afficherCatalogue();
-    }
+    catalogue = genererCatalogueDemo();
+    catalogueCompletCharge = true;
+    afficherCatalogue();
   }
 }
 
+async function chargerCatalogue(categorie) {
+  categorie = categorie || 'Laisse';
+  
+  if (!catalogueCompletCharge) {
+    await chargerCatalogueComplet();
+  }
+  
+  // Filtrer par catégorie
+  const catLower = categorie.toLowerCase().replace(/s$/, '');
+  if (categorie === 'all') {
+    catalogue = catalogueComplet;
+  } else {
+    catalogue = catalogueComplet.filter(function(p) {
+      const pCat = String(p.categorie || '').toLowerCase().replace(/s$/, '');
+      return pCat === catLower || pCat.includes(catLower) || catLower.includes(pCat);
+    });
+  }
+  appliqueFiltres();
+}
+
 async function chargerToutLesCatalogue() {
-  if (categoriesChargees['tous']) {
-    catalogue = categoriesChargees['tous'];
-    appliqueFiltres();
-    return;
+  if (!catalogueCompletCharge) {
+    await chargerCatalogueComplet();
   }
-  document.getElementById('catalogue-grid').innerHTML = '<div class="loading"><div class="spinner"></div>Chargement de tout le catalogue...</div>';
-  
-  const categories = ['Laisse', 'Collier', 'Manteau', 'Sac', 'Foulard', 'Peignoir', 'Porte sac à déjections'];
-  let tous = [];
-  
-  for (let i = 0; i < categories.length; i++) {
-    const cat = categories[i];
-    if (categoriesChargees[cat]) {
-      tous = tous.concat(categoriesChargees[cat]);
-    } else {
-      try {
-        const resp = await fetch(APPS_SCRIPT_URL + '?action=catalogue&code=' + (boutique.code || '') + '&categorie=' + encodeURIComponent(cat));
-        const data = await resp.json();
-        const prods = data.catalogue || [];
-        categoriesChargees[cat] = prods;
-        tous = tous.concat(prods);
-      } catch(e) {}
-    }
-  }
-  
-  catalogue = tous;
-  categoriesChargees['tous'] = tous;
-  afficherCatalogue();
+  catalogue = catalogueComplet;
+  appliqueFiltres();
 }
 
 // ─── Catalogue de démo ────────────────────────────────────
